@@ -3,95 +3,159 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Monetary Policy Slider Simulation — CS21</title>
+<title>Fiscal Policy Slider Simulation — CS20</title>
 
 <style>
-body{margin:0;background:#0b1220;color:#e7eefc;font-family:system-ui;text-align:center;}
-.panel{background:#111a2f;margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);}
-.slider-wrap{display:flex;justify-content:center;gap:60px;margin:30px 0;}
-input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
-.economy{margin:20px auto;width:160px;height:160px;background:#7aa2ff;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:.3s;}
-button{padding:10px 16px;border:none;border-radius:10px;margin:5px;cursor:pointer;font-weight:bold;}
+:root{
+  --bg:#0b1220;
+  --panel:#111a2f;
+  --text:#e7eefc;
+  --muted:#a8b4cf;
+  --accent:#7aa2ff;
+  --good:#2bd576;
+  --bad:#ff5c7a;
+}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui;
+  text-align:center;
+}
+.wrap{width:min(1100px,95vw);margin:20px auto;}
+.panel{
+  background:var(--panel);
+  padding:20px;
+  border-radius:18px;
+}
+h1{margin:0 0 10px}
+input{
+  padding:8px;
+  border-radius:8px;
+  border:none;
+  font-size:16px;
+}
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  margin:5px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.primary{background:var(--accent);color:#000;}
+.good{background:var(--good);}
+.bad{background:var(--bad);}
+.slider-wrap{
+  display:flex;
+  justify-content:center;
+  gap:80px;
+  margin:30px 0;
+}
+.slider-block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+input[type=range]{
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  width:8px;
+  height:250px;
+}
+.economy{
+  margin:20px auto;
+  width:150px;
+  height:150px;
+  background:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  transition:all .3s ease;
+  font-weight:bold;
+}
+.meta{font-size:14px;color:var(--muted);}
 .hidden{display:none;}
 </style>
 </head>
+
 <body>
+<div class="wrap">
 
 <div id="startScreen" class="panel">
-<h1>Monetary Policy Simulation</h1>
+<h1>Fiscal Policy Simulation</h1>
+<p>Enter Full Name to Begin</p>
 <input id="studentName" placeholder="First and Last Name"/>
 <br><br>
-<button onclick="startGame()">Start</button>
+<button class="primary" onclick="startGame()">Start</button>
 </div>
 
-<div id="gameScreen" class="panel hidden">
-<div>
+<div id="gameScreen" class="hidden">
+
+<div class="meta">
 <span id="timestamp"></span> |
 Time: <span id="timer">0</span>s |
 Accuracy: <span id="accuracy">100</span>%
 </div>
 
+<div class="panel">
 <h2 id="scenario"></h2>
 
 <div class="slider-wrap">
-
-<div>
-<label><b>Buy Securities ↑</b></label><br>
-<input type="range" min="-100" max="100" value="0" id="omo"><br>
-<label>Sell Securities ↓</label>
+<div class="slider-block">
+<label><b>Increase Spending ↑</b></label>
+<input type="range" min="-100" max="100" value="0" id="spending">
+<label>Decrease Spending ↓</label>
 </div>
 
-<div>
-<label><b>Lower Reserve ↑</b></label><br>
-<input type="range" min="-100" max="100" value="0" id="reserve"><br>
-<label>Raise Reserve ↓</label>
+<div class="slider-block">
+<label><b>Decrease Taxes ↑</b></label>
+<input type="range" min="-100" max="100" value="0" id="taxes">
+<label>Increase Taxes ↓</label>
+</div>
 </div>
 
-<div>
-<label><b>Lower Discount ↑</b></label><br>
-<input type="range" min="-100" max="100" value="0" id="discount"><br>
-<label>Raise Discount ↓</label>
-</div>
+<div class="economy" id="economyBox">ECONOMY</div>
 
-</div>
-
-<div class="economy" id="econBox">Economy / Inflation</div>
-
-<button onclick="submitAnswer('Expansionary')">Expansionary</button>
-<button onclick="submitAnswer('Contractionary')">Contractionary</button>
+<button onclick="submitAnswer('Expansionary')" class="good">Expansionary</button>
+<button onclick="submitAnswer('Contractionary')" class="bad">Contractionary</button>
 
 <p id="feedback"></p>
+</div>
 </div>
 
 <div id="finishScreen" class="panel hidden"></div>
 
+</div>
+
 <script>
-const scenarios=[
-{q:"Recession begins. The Fed buys government bonds.",a:"Expansionary"},
-{q:"Inflation rises. The Fed sells bonds.",a:"Contractionary"},
-{q:"Unemployment increases. Reserve requirement lowered.",a:"Expansionary"},
-{q:"Economy overheating. Reserve requirement raised.",a:"Contractionary"},
-{q:"Banks need liquidity. Discount rate lowered.",a:"Expansionary"},
-{q:"Inflation at 8%. Discount rate increased.",a:"Contractionary"},
-{q:"GDP declining. Fed buys securities.",a:"Expansionary"},
-{q:"Prices rising too fast. Fed sells securities.",a:"Contractionary"},
-{q:"Lending slows. Reserve requirement reduced.",a:"Expansionary"},
-{q:"Credit expanding too quickly. Reserve raised.",a:"Contractionary"},
-{q:"Recession deepens. Discount lowered.",a:"Expansionary"},
-{q:"Inflation spike. Discount raised.",a:"Contractionary"},
-{q:"Economic slowdown. Fed buys bonds.",a:"Expansionary"},
-{q:"Demand too high. Fed sells bonds.",a:"Contractionary"},
-{q:"Banks hesitant to lend. Reserve lowered.",a:"Expansionary"},
-{q:"Money supply too large. Reserve raised.",a:"Contractionary"},
-{q:"Unemployment rising. Discount rate cut.",a:"Expansionary"},
-{q:"Inflation persists. Discount increased.",a:"Contractionary"},
-{q:"GDP shrinking. Fed purchases securities.",a:"Expansionary"},
-{q:"Inflation accelerates. Fed sells securities.",a:"Contractionary"},
-{q:"Credit tightens. Reserve requirement lowered.",a:"Expansionary"},
-{q:"Economy overheating. Reserve raised.",a:"Contractionary"},
-{q:"Businesses struggling. Discount lowered.",a:"Expansionary"},
-{q:"Prices surging. Discount raised.",a:"Contractionary"},
-{q:"Recession spreads. Fed buys bonds.",a:"Expansionary"},
+const scenarios = [
+{q:"Unemployment is rising sharply. Congress increases unemployment benefits.",a:"Expansionary"},
+{q:"Inflation is rising rapidly. Congress cuts federal spending.",a:"Contractionary"},
+{q:"Businesses are struggling. Tax credits are introduced.",a:"Expansionary"},
+{q:"The economy is overheating. Income taxes are raised.",a:"Contractionary"},
+{q:"A recession begins. Infrastructure spending increases.",a:"Expansionary"},
+{q:"The deficit grows large. Government spending decreases.",a:"Contractionary"},
+{q:"Consumers slow spending. Payroll taxes are reduced.",a:"Expansionary"},
+{q:"Prices rise too quickly. Corporate taxes increase.",a:"Contractionary"},
+{q:"GDP declines for two quarters. Government boosts stimulus checks.",a:"Expansionary"},
+{q:"Economic growth exceeds sustainable levels. Spending is cut.",a:"Contractionary"},
+{q:"Unemployment hits 8%. Education funding rises.",a:"Expansionary"},
+{q:"Demand exceeds supply. Federal taxes increase.",a:"Contractionary"},
+{q:"Manufacturing declines. Tax deductions expand.",a:"Expansionary"},
+{q:"Inflation reaches 9%. Government cuts subsidies.",a:"Contractionary"},
+{q:"Recession fears spread. Congress increases defense spending.",a:"Expansionary"},
+{q:"Stock market bubbles. Capital gains taxes increase.",a:"Contractionary"},
+{q:"Economic slowdown. Small business tax credits expand.",a:"Expansionary"},
+{q:"Prices rising too fast. Federal budget cuts enacted.",a:"Contractionary"},
+{q:"Housing market collapses. Federal grants increase.",a:"Expansionary"},
+{q:"High inflation persists. Government reduces spending.",a:"Contractionary"},
+{q:"Consumer confidence falls. Taxes reduced.",a:"Expansionary"},
+{q:"Rapid growth threatens inflation. Taxes raised.",a:"Contractionary"},
+{q:"Recession spreads nationwide. Spending rises.",a:"Expansionary"},
+{q:"Inflation accelerates. Spending decreases.",a:"Contractionary"},
+{q:"Unemployment surges. Government stimulus enacted.",a:"Expansionary"},
 ];
 
 let index=0, correct=0, attempts=0, timer=0, interval;
@@ -99,26 +163,29 @@ let index=0, correct=0, attempts=0, timer=0, interval;
 function startGame(){
 const name=document.getElementById("studentName").value;
 if(!name)return alert("Enter full name.");
-startScreen.classList.add("hidden");
-gameScreen.classList.remove("hidden");
-timestamp.textContent=new Date().toLocaleString();
+document.getElementById("startScreen").classList.add("hidden");
+document.getElementById("gameScreen").classList.remove("hidden");
+document.getElementById("timestamp").textContent=new Date().toLocaleString();
 loadScenario();
 interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
 }
 
 function loadScenario(){
-scenario.textContent=scenarios[index].q;
-feedback.textContent="";
+document.getElementById("scenario").textContent=scenarios[index].q;
+document.getElementById("feedback").textContent="";
 updateEconomy();
 }
 
-document.querySelectorAll("input[type=range]").forEach(s=>s.oninput=updateEconomy);
+document.getElementById("spending").oninput=updateEconomy;
+document.getElementById("taxes").oninput=updateEconomy;
 
 function updateEconomy(){
-let net=parseInt(omo.value)+parseInt(reserve.value)+parseInt(discount.value);
-let size=160+net/3;
-econBox.style.width=size+"px";
-econBox.style.height=size+"px";
+let spend=parseInt(spending.value);
+let tax=parseInt(taxes.value);
+let net=spend-tax;
+let size=150+net/2;
+economyBox.style.width=size+"px";
+economyBox.style.height=size+"px";
 }
 
 function submitAnswer(choice){
@@ -128,23 +195,24 @@ correct++;
 index++;
 if(index>=scenarios.length){
 if(correct===attempts) finishGame();
-else alert("Must achieve 100% accuracy.");
+else alert("Must achieve 100% accuracy for ticket.");
 return;
 }
 loadScenario();
 }else{
-feedback.textContent="Hint: Buying bonds, lowering reserve or lowering discount = expand. Opposite = contract.";
+document.getElementById("feedback").textContent="Hint: Is the government increasing spending or cutting taxes (expand) OR decreasing spending/increasing taxes (contract)?";
 }
-accuracy.textContent=Math.round((correct/attempts)*100);
+document.getElementById("accuracy").textContent=Math.round((correct/attempts)*100);
 }
 
 function finishGame(){
 clearInterval(interval);
-gameScreen.classList.add("hidden");
-finishScreen.classList.remove("hidden");
-finishScreen.innerHTML="<h2>100% Perfect Run!</h2>"+
+document.getElementById("gameScreen").classList.add("hidden");
+document.getElementById("finishScreen").classList.remove("hidden");
+document.getElementById("finishScreen").innerHTML=
+"<h2>100% Perfect Run Achieved!</h2>"+
 "<p>Time: "+timer+" seconds</p>"+
-"<p>Ticket: MON-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
+"<p>Submission Ticket: FISCAL-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
 }
 </script>
 </body>
