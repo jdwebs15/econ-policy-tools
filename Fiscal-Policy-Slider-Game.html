@@ -99,7 +99,6 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
 </div>
 
 <script>
-/* ---------- Scenario Bank (25) — Mixed order + more context ---------- */
 const SCENARIOS_MASTER = [
   {q:"A recession hits. Congress launches a nationwide highway building program to create jobs and increase demand.", a:"Expansionary"},
   {q:"The President promises to increase the child tax deduction to put more money back into households.", a:"Expansionary"},
@@ -121,14 +120,13 @@ const SCENARIOS_MASTER = [
   {q:"Rapid expansion is creating shortages. Congress reduces federal grants and spending to cool growth.", a:"Contractionary"},
   {q:"Policymakers seek to slow growth. Congress increases payroll taxes to reduce disposable income.", a:"Contractionary"},
   {q:"A boom leads to asset bubbles. Congress raises capital gains taxes to dampen speculative demand.", a:"Contractionary"},
-  /* a few more “plain OST-style” but still mixed */
   {q:"Unemployment rises sharply. Congress increases unemployment benefits.", a:"Expansionary"},
   {q:"GDP declines for two quarters. Federal spending increases.", a:"Expansionary"},
   {q:"Prices rise too fast. Government spending decreases.", a:"Contractionary"},
   {q:"Economic growth exceeds sustainable levels. Federal taxes increase.", a:"Contractionary"},
+  {q:"GDP falling. Spending increases.", a:"Expansionary"},
 ];
 
-/* ---------- Game State ---------- */
 let scenarios = [];
 let index=0, correct=0, attempts=0, timer=0, interval;
 let toolUsed=false;
@@ -144,7 +142,7 @@ function shuffle(arr){
 
 function startGame(){
   if(!studentName.value.trim()) return alert("Enter full name.");
-  scenarios = shuffle(SCENARIOS_MASTER); // <-- prevents patterns every run
+  scenarios = shuffle(SCENARIOS_MASTER);
   startScreen.classList.add("hidden");
   gameScreen.classList.remove("hidden");
   timestamp.textContent = new Date().toLocaleString();
@@ -172,10 +170,13 @@ document.querySelectorAll("input[type=range]").forEach(s=>{
 });
 
 function updateEconomy(){
-  // net expansion = spending up and/or taxes down
-  let net = parseInt(spending.value) - parseInt(taxes.value);
+  // IMPORTANT:
+  // Spending slider: up = more spending (expansion)
+  // Taxes slider: up = LOWER taxes (expansion)  ✅ therefore ADD it
+  let net = parseInt(spending.value) + parseInt(taxes.value);
+
   let size = 150 + net/2;
-  size = Math.max(90, Math.min(240, size)); // clamp so it never gets silly
+  size = Math.max(90, Math.min(240, size));
   economyBox.style.width=size+"px";
   economyBox.style.height=size+"px";
 }
@@ -183,7 +184,7 @@ function updateEconomy(){
 function submitAnswer(choice){
   if(!toolUsed) return;
 
-  attempts++; // misses stick; accuracy cannot “recover”
+  attempts++;
   if(choice === scenarios[index].a){
     correct++;
     index++;
