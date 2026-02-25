@@ -3,56 +3,75 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Economic Policy Tools — Mastery Hub</title>
-  <meta name="description" content="Interactive Fiscal and Monetary Policy manipulation games." />
+  <title>Government & The Economy — Mastery Hub (CS 20–21)</title>
   <link rel="stylesheet" href="./styles.css" />
+  <meta name="description" content="Government & The Economy mastery games (Ohio CS 20–21)" />
 </head>
 <body>
-
   <div class="wrap">
-
     <header class="top">
       <div>
         <div class="kicker">LEGEND MASTERY SERIES</div>
-        <h1>Economic Policy Tools</h1>
+        <h1>Government & The Economy — Game Hub</h1>
         <p class="sub">
-          Interactive simulations aligned to Fiscal and Monetary Policy standards.
-          Master the tools. Control the economy.
+          Ohio American Government <b>CS 20–21</b>. Mastery = complete all scenarios with <b>100% accuracy</b>.
         </p>
       </div>
+
       <div class="meta">
-        <div class="pill">Interactive</div>
-        <div class="pill">Policy Simulation</div>
+        <div class="pill">CS20 Fiscal Policy</div>
+        <div class="pill">CS21 Monetary Policy</div>
+        <div class="pill subtle" id="buildStamp">Updated: —</div>
       </div>
     </header>
 
     <section class="grid">
-
-      <a class="card" href="./fiscal-policy-tool.html">
-        <div class="title">Fiscal Policy — Tool Manipulation</div>
+      <a class="card" href="./Fiscal-Policy-Slider-Game.html">
+        <div class="title">Fiscal Policy — Slider Simulation</div>
         <p class="desc">
-          Adjust government spending and taxation levels to manage inflation,
-          unemployment, and economic growth.
+          Manipulate spending/taxes sliders. Classify expansionary vs contractionary. 25 OST-aligned scenarios.
         </p>
-        <div class="tag">Congress + Executive Tools</div>
+        <div class="tags">
+          <span class="tag">CS20</span>
+          <span class="tag">Taxing</span>
+          <span class="tag">Spending</span>
+          <span class="tag">Regulation</span>
+        </div>
       </a>
 
-      <a class="card" href="./monetary-policy-tool.html">
-        <div class="title">Monetary Policy — Tool Manipulation</div>
+      <a class="card" href="./Monetary-Policy-Slider-Game.html">
+        <div class="title">Monetary Policy — Slider Simulation</div>
         <p class="desc">
-          Use interest rates, reserve requirements, and open market operations
-          to stabilize economic conditions.
+          Open market ops, reserve requirement, discount rate. Economy/Inflation visual. 25 OST-aligned scenarios.
         </p>
-        <div class="tag">Federal Reserve Tools</div>
+        <div class="tags">
+          <span class="tag">CS21</span>
+          <span class="tag">OMO</span>
+          <span class="tag">Reserve</span>
+          <span class="tag">Discount</span>
+        </div>
       </a>
-
     </section>
 
-    <footer>
-      <p>© Legend Mastery Series | Economics & Government</p>
-    </footer>
+    <section class="panel">
+      <h2>Teacher Notes</h2>
+      <ul>
+        <li><b>OST pattern:</b> typically one tool at a time; avoids counter-manipulation.</li>
+        <li><b>Fiscal:</b> focus on growth/stability; inflation usually reserved for monetary items.</li>
+        <li><b>Mastery rule:</b> students must finish with <b>100% accuracy</b> to receive the ticket.</li>
+      </ul>
+    </section>
 
+    <footer class="foot">
+      <div class="muted">Tip: If you rename a game file, update the link here to match exactly (case + hyphens matter).</div>
+    </footer>
   </div>
 
+  <script>
+    // simple local “updated” stamp (no network)
+    const d = new Date();
+    document.getElementById("buildStamp").textContent =
+      "Updated: " + d.toLocaleDateString() + " " + d.toLocaleTimeString();
+  </script>
 </body>
 </html>
