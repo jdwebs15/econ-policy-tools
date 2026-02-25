@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Fiscal Policy Slider Simulation — CS20</title>
+<title>Monetary Policy Slider Simulation — CS21</title>
 
 <style>
 :root{
@@ -11,108 +11,100 @@
   --panel:#111a2f;
   --text:#e7eefc;
   --muted:#a8b4cf;
-  --accent:#7aa2ff;
   --good:#2bd576;
   --bad:#ff5c7a;
 }
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui;text-align:center;}
-.wrap{width:min(1100px,95vw);margin:20px auto;}
-.panel{background:var(--panel);padding:20px;border-radius:18px;}
-input{padding:8px;border-radius:8px;border:none;font-size:16px;}
+.panel{background:var(--panel);margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);}
+input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
+.slider-wrap{display:flex;justify-content:center;gap:60px;margin:30px 0;}
+.economy{margin:20px auto;width:160px;height:160px;background:#7aa2ff;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:.3s;}
 button{padding:10px 16px;border:none;border-radius:10px;margin:5px;cursor:pointer;font-weight:bold;}
 button:disabled{opacity:.4;cursor:not-allowed;}
 .good{background:var(--good);}
 .bad{background:var(--bad);}
-.primary{background:var(--accent);color:#000;}
-.slider-wrap{display:flex;justify-content:center;gap:80px;margin:30px 0;}
-.slider-block{display:flex;flex-direction:column;align-items:center;}
-input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
-.economy{margin:20px auto;width:150px;height:150px;background:var(--accent);display:flex;align-items:center;justify-content:center;border-radius:12px;transition:.3s;font-weight:bold;}
-.meta{font-size:14px;color:var(--muted);}
 .hidden{display:none;}
 .instructions{font-size:14px;color:var(--muted);margin-bottom:15px;}
 </style>
 </head>
 <body>
-<div class="wrap">
 
 <div id="startScreen" class="panel">
-<h1>Fiscal Policy Simulation</h1>
-<p>Enter Full Name to Begin</p>
+<h1>Monetary Policy Simulation</h1>
 <input id="studentName" placeholder="First and Last Name"/>
 <br><br>
-<button class="primary" onclick="startGame()">Start</button>
+<button onclick="startGame()">Start</button>
 </div>
 
-<div id="gameScreen" class="hidden">
-<div class="meta">
+<div id="gameScreen" class="panel hidden">
+<div>
 <span id="timestamp"></span> |
 Time: <span id="timer">0</span>s |
 Accuracy: <span id="accuracy">100</span>%
 </div>
 
-<div class="panel">
 <h2 id="scenario"></h2>
 
 <div class="instructions">
-Step 1: Manipulate at least one fiscal tool (spending or taxes).<br>
-Step 2: Choose Expansionary or Contractionary correctly to advance.
+Step 1: Manipulate at least one monetary tool.<br>
+Step 2: Choose Expansionary or Contractionary correctly.
 </div>
 
 <div class="slider-wrap">
-<div class="slider-block">
-<label><b>Increase Spending ↑</b></label>
-<input type="range" min="-100" max="100" value="0" id="spending">
-<label>Decrease Spending ↓</label>
+<div>
+<label><b>Buy Securities ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="omo"><br>
+<label>Sell Securities ↓</label>
+</div>
+<div>
+<label><b>Lower Reserve ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="reserve"><br>
+<label>Raise Reserve ↓</label>
+</div>
+<div>
+<label><b>Lower Discount ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="discount"><br>
+<label>Raise Discount ↓</label>
+</div>
 </div>
 
-<div class="slider-block">
-<label><b>Decrease Taxes ↑</b></label>
-<input type="range" min="-100" max="100" value="0" id="taxes">
-<label>Increase Taxes ↓</label>
-</div>
-</div>
-
-<div class="economy" id="economyBox">ECONOMY</div>
+<div class="economy" id="econBox">Economy / Inflation</div>
 
 <button id="expandBtn" class="good" disabled onclick="submitAnswer('Expansionary')">Expansionary</button>
 <button id="contractBtn" class="bad" disabled onclick="submitAnswer('Contractionary')">Contractionary</button>
 
 <p id="feedback"></p>
 </div>
-</div>
 
 <div id="finishScreen" class="panel hidden"></div>
 
-</div>
-
 <script>
-const scenarios = [
-{q:"Unemployment rising sharply. Congress increases unemployment benefits.",a:"Expansionary"},
-{q:"Inflation rising rapidly. Congress cuts spending.",a:"Contractionary"},
-{q:"Recession begins. Infrastructure spending increases.",a:"Expansionary"},
-{q:"Economy overheating. Income taxes raised.",a:"Contractionary"},
-{q:"GDP declines. Stimulus checks approved.",a:"Expansionary"},
-{q:"Deficit large. Spending reduced.",a:"Contractionary"},
-{q:"Consumers slowing. Payroll taxes reduced.",a:"Expansionary"},
-{q:"Prices rising fast. Corporate taxes increased.",a:"Contractionary"},
-{q:"Unemployment 8%. Education funding rises.",a:"Expansionary"},
-{q:"Demand exceeds supply. Taxes increased.",a:"Contractionary"},
-{q:"Manufacturing declines. Tax credits expanded.",a:"Expansionary"},
-{q:"Inflation high. Subsidies cut.",a:"Contractionary"},
-{q:"Recession fears. Defense spending increases.",a:"Expansionary"},
-{q:"Stock bubble forming. Capital gains tax raised.",a:"Contractionary"},
-{q:"Economic slowdown. Small business deductions expand.",a:"Expansionary"},
-{q:"Inflation persistent. Budget cuts enacted.",a:"Contractionary"},
-{q:"Housing crash. Federal grants increase.",a:"Expansionary"},
-{q:"High inflation continues. Spending decreases.",a:"Contractionary"},
-{q:"Consumer confidence falls. Taxes reduced.",a:"Expansionary"},
-{q:"Rapid growth. Taxes raised.",a:"Contractionary"},
-{q:"Recession spreads. Spending rises.",a:"Expansionary"},
-{q:"Inflation accelerates. Spending decreases.",a:"Contractionary"},
-{q:"Unemployment surges. Stimulus enacted.",a:"Expansionary"},
-{q:"Overheating economy. Taxes increase.",a:"Contractionary"},
-{q:"GDP falling. Spending increases.",a:"Expansionary"},
+const scenarios=[
+{q:"Recession begins. Fed buys bonds.",a:"Expansionary"},
+{q:"Inflation rises. Fed sells bonds.",a:"Contractionary"},
+{q:"Unemployment increases. Reserve lowered.",a:"Expansionary"},
+{q:"Economy overheating. Reserve raised.",a:"Contractionary"},
+{q:"Banks need liquidity. Discount lowered.",a:"Expansionary"},
+{q:"Inflation 8%. Discount raised.",a:"Contractionary"},
+{q:"GDP declining. Fed buys securities.",a:"Expansionary"},
+{q:"Prices rising. Fed sells securities.",a:"Contractionary"},
+{q:"Lending slows. Reserve reduced.",a:"Expansionary"},
+{q:"Credit expanding fast. Reserve raised.",a:"Contractionary"},
+{q:"Recession deepens. Discount lowered.",a:"Expansionary"},
+{q:"Inflation spike. Discount raised.",a:"Contractionary"},
+{q:"Economic slowdown. Fed buys bonds.",a:"Expansionary"},
+{q:"Demand too high. Fed sells bonds.",a:"Contractionary"},
+{q:"Banks hesitant. Reserve lowered.",a:"Expansionary"},
+{q:"Money supply too large. Reserve raised.",a:"Contractionary"},
+{q:"Unemployment rising. Discount cut.",a:"Expansionary"},
+{q:"Inflation persists. Discount increased.",a:"Contractionary"},
+{q:"GDP shrinking. Fed buys bonds.",a:"Expansionary"},
+{q:"Inflation accelerates. Fed sells bonds.",a:"Contractionary"},
+{q:"Credit tightens. Reserve lowered.",a:"Expansionary"},
+{q:"Economy overheating. Reserve raised.",a:"Contractionary"},
+{q:"Businesses struggling. Discount lowered.",a:"Expansionary"},
+{q:"Prices surging. Discount raised.",a:"Contractionary"},
+{q:"Recession spreads. Fed buys bonds.",a:"Expansionary"},
 ];
 
 let index=0, correct=0, attempts=0, timer=0, interval;
@@ -124,15 +116,13 @@ startScreen.classList.add("hidden");
 gameScreen.classList.remove("hidden");
 timestamp.textContent=new Date().toLocaleString();
 loadScenario();
-interval=setInterval(()=>{timer++;timerDisplay();},1000);
+interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
 }
-
-function timerDisplay(){timerEl=document.getElementById("timer");timerEl.textContent=timer;}
 
 function loadScenario(){
 scenario.textContent=scenarios[index].q;
 feedback.textContent="";
-spending.value=0; taxes.value=0;
+omo.value=0;reserve.value=0;discount.value=0;
 toolUsed=false;
 expandBtn.disabled=true;
 contractBtn.disabled=true;
@@ -149,10 +139,10 @@ updateEconomy();
 });
 
 function updateEconomy(){
-let net=parseInt(spending.value)-parseInt(taxes.value);
-let size=150+net/2;
-economyBox.style.width=size+"px";
-economyBox.style.height=size+"px";
+let net=parseInt(omo.value)+parseInt(reserve.value)+parseInt(discount.value);
+let size=160+net/3;
+econBox.style.width=size+"px";
+econBox.style.height=size+"px";
 }
 
 function submitAnswer(choice){
@@ -163,12 +153,12 @@ correct++;
 index++;
 if(index>=scenarios.length){
 if(correct===attempts) finishGame();
-else alert("You must achieve 100% accuracy for ticket.");
+else alert("Must achieve 100% accuracy.");
 return;
 }
 loadScenario();
 }else{
-feedback.textContent="Incorrect. Think: Increase spending OR decrease taxes = expansion.";
+feedback.textContent="Incorrect. Buy bonds / lower reserve / lower discount = expand.";
 }
 accuracy.textContent=Math.round((correct/attempts)*100);
 }
@@ -179,7 +169,7 @@ gameScreen.classList.add("hidden");
 finishScreen.classList.remove("hidden");
 finishScreen.innerHTML="<h2>100% Perfect Run!</h2>"+
 "<p>Time: "+timer+" seconds</p>"+
-"<p>Ticket: FISCAL-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
+"<p>Ticket: MON-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
 }
 </script>
 </body>
