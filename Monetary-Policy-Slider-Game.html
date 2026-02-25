@@ -1,1 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Monetary Policy Slider Simulation — CS21</title>
 
+<style>
+body{margin:0;background:#0b1220;color:#e7eefc;font-family:system-ui;text-align:center;}
+.panel{background:#111a2f;margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);}
+.slider-wrap{display:flex;justify-content:center;gap:60px;margin:30px 0;}
+input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
+.economy{margin:20px auto;width:160px;height:160px;background:#7aa2ff;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:.3s;}
+button{padding:10px 16px;border:none;border-radius:10px;margin:5px;cursor:pointer;font-weight:bold;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="startScreen" class="panel">
+<h1>Monetary Policy Simulation</h1>
+<input id="studentName" placeholder="First and Last Name"/>
+<br><br>
+<button onclick="startGame()">Start</button>
+</div>
+
+<div id="gameScreen" class="panel hidden">
+<div>
+<span id="timestamp"></span> |
+Time: <span id="timer">0</span>s |
+Accuracy: <span id="accuracy">100</span>%
+</div>
+
+<h2 id="scenario"></h2>
+
+<div class="slider-wrap">
+
+<div>
+<label><b>Buy Securities ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="omo"><br>
+<label>Sell Securities ↓</label>
+</div>
+
+<div>
+<label><b>Lower Reserve ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="reserve"><br>
+<label>Raise Reserve ↓</label>
+</div>
+
+<div>
+<label><b>Lower Discount ↑</b></label><br>
+<input type="range" min="-100" max="100" value="0" id="discount"><br>
+<label>Raise Discount ↓</label>
+</div>
+
+</div>
+
+<div class="economy" id="econBox">Economy / Inflation</div>
+
+<button onclick="submitAnswer('Expansionary')">Expansionary</button>
+<button onclick="submitAnswer('Contractionary')">Contractionary</button>
+
+<p id="feedback"></p>
+</div>
+
+<div id="finishScreen" class="panel hidden"></div>
+
+<script>
+const scenarios=[
+{q:"Recession begins. The Fed buys government bonds.",a:"Expansionary"},
+{q:"Inflation rises. The Fed sells bonds.",a:"Contractionary"},
+{q:"Unemployment increases. Reserve requirement lowered.",a:"Expansionary"},
+{q:"Economy overheating. Reserve requirement raised.",a:"Contractionary"},
+{q:"Banks need liquidity. Discount rate lowered.",a:"Expansionary"},
+{q:"Inflation at 8%. Discount rate increased.",a:"Contractionary"},
+{q:"GDP declining. Fed buys securities.",a:"Expansionary"},
+{q:"Prices rising too fast. Fed sells securities.",a:"Contractionary"},
+{q:"Lending slows. Reserve requirement reduced.",a:"Expansionary"},
+{q:"Credit expanding too quickly. Reserve raised.",a:"Contractionary"},
+{q:"Recession deepens. Discount lowered.",a:"Expansionary"},
+{q:"Inflation spike. Discount raised.",a:"Contractionary"},
+{q:"Economic slowdown. Fed buys bonds.",a:"Expansionary"},
+{q:"Demand too high. Fed sells bonds.",a:"Contractionary"},
+{q:"Banks hesitant to lend. Reserve lowered.",a:"Expansionary"},
+{q:"Money supply too large. Reserve raised.",a:"Contractionary"},
+{q:"Unemployment rising. Discount rate cut.",a:"Expansionary"},
+{q:"Inflation persists. Discount increased.",a:"Contractionary"},
+{q:"GDP shrinking. Fed purchases securities.",a:"Expansionary"},
+{q:"Inflation accelerates. Fed sells securities.",a:"Contractionary"},
+{q:"Credit tightens. Reserve requirement lowered.",a:"Expansionary"},
+{q:"Economy overheating. Reserve raised.",a:"Contractionary"},
+{q:"Businesses struggling. Discount lowered.",a:"Expansionary"},
+{q:"Prices surging. Discount raised.",a:"Contractionary"},
+{q:"Recession spreads. Fed buys bonds.",a:"Expansionary"},
+];
+
+let index=0, correct=0, attempts=0, timer=0, interval;
+
+function startGame(){
+const name=document.getElementById("studentName").value;
+if(!name)return alert("Enter full name.");
+startScreen.classList.add("hidden");
+gameScreen.classList.remove("hidden");
+timestamp.textContent=new Date().toLocaleString();
+loadScenario();
+interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
+}
+
+function loadScenario(){
+scenario.textContent=scenarios[index].q;
+feedback.textContent="";
+updateEconomy();
+}
+
+document.querySelectorAll("input[type=range]").forEach(s=>s.oninput=updateEconomy);
+
+function updateEconomy(){
+let net=parseInt(omo.value)+parseInt(reserve.value)+parseInt(discount.value);
+let size=160+net/3;
+econBox.style.width=size+"px";
+econBox.style.height=size+"px";
+}
+
+function submitAnswer(choice){
+attempts++;
+if(choice===scenarios[index].a){
+correct++;
+index++;
+if(index>=scenarios.length){
+if(correct===attempts) finishGame();
+else alert("Must achieve 100% accuracy.");
+return;
+}
+loadScenario();
+}else{
+feedback.textContent="Hint: Buying bonds, lowering reserve or lowering discount = expand. Opposite = contract.";
+}
+accuracy.textContent=Math.round((correct/attempts)*100);
+}
+
+function finishGame(){
+clearInterval(interval);
+gameScreen.classList.add("hidden");
+finishScreen.classList.remove("hidden");
+finishScreen.innerHTML="<h2>100% Perfect Run!</h2>"+
+"<p>Time: "+timer+" seconds</p>"+
+"<p>Ticket: MON-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
+}
+</script>
+</body>
+</html>
