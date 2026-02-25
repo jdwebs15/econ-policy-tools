@@ -3,6 +3,221 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Monetary Policy Slider Simulation — CS21</title>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#111a2f;
+  --text:#e7eefc;
+  --muted:#a8b4cf;
+  --good:#2bd576;
+  --bad:#ff5c7a;
+  --accent:#7aa2ff;
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui;text-align:center;}
+.panel{background:var(--panel);margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);}
+input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
+.slider-wrap{display:flex;justify-content:center;gap:60px;margin:26px 0 18px;}
+.economy{
+  margin:14px auto 6px;
+  width:160px;height:160px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  border-radius:12px;transition:.25s;
+  font-weight:900; letter-spacing:.05em;
+}
+button{padding:10px 16px;border:none;border-radius:10px;margin:5px;cursor:pointer;font-weight:bold;}
+button:disabled{opacity:.4;cursor:not-allowed;}
+.good{background:var(--good);}
+.bad{background:var(--bad);}
+.hidden{display:none;}
+.instructions{font-size:14px;color:var(--muted);margin:0 0 14px;line-height:1.35;}
+.meta{font-size:14px;color:var(--muted);margin-bottom:10px;}
+.small{font-size:13px;color:var(--muted);}
+hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
+</style>
+</head>
+<body>
+
+<div id="startScreen" class="panel">
+  <h1>Monetary Policy Simulation</h1>
+  <p>Enter Full Name to Begin</p>
+  <input id="studentName" placeholder="First and Last Name"/>
+  <br><br>
+  <button onclick="startGame()">Start</button>
+  <p class="small">CS21: The Fed regulates money supply using OMO, reserve requirement, and discount rate.</p>
+</div>
+
+<div id="gameScreen" class="panel hidden">
+  <div class="meta">
+    <span id="timestamp"></span> |
+    Time: <span id="timer">0</span>s |
+    Accuracy: <span id="accuracy">100</span>%
+  </div>
+
+  <h2 id="scenario"></h2>
+
+  <div class="instructions">
+    <b>Directions:</b> Manipulate at least one monetary tool, then choose the correct policy.<br>
+    Expansionary tools increase money supply / lower rates. Contractionary tools reduce money supply / raise rates.
+  </div>
+
+  <div class="slider-wrap">
+    <div>
+      <label><b>Buy Securities ↑</b></label><br>
+      <input type="range" min="-100" max="100" value="0" id="omo"><br>
+      <label>Sell Securities ↓</label>
+    </div>
+
+    <div>
+      <label><b>Lower Reserve ↑</b></label><br>
+      <input type="range" min="-100" max="100" value="0" id="reserve"><br>
+      <label>Raise Reserve ↓</label>
+    </div>
+
+    <div>
+      <label><b>Lower Discount ↑</b></label><br>
+      <input type="range" min="-100" max="100" value="0" id="discount"><br>
+      <label>Raise Discount ↓</label>
+    </div>
+  </div>
+
+  <div class="economy" id="econBox">ECONY / INFL</div>
+
+  <hr>
+
+  <button id="expandBtn" class="good" disabled onclick="submitAnswer('Expansionary')">Expansionary</button>
+  <button id="contractBtn" class="bad" disabled onclick="submitAnswer('Contractionary')">Contractionary</button>
+
+  <p id="feedback"></p>
+</div>
+
+<div id="finishScreen" class="panel hidden"></div>
+
+<script>
+/* ---------- Scenario Bank (25) — Mixed order + more context ---------- */
+const SCENARIOS_MASTER = [
+  {q:"A recession begins and unemployment rises. The Fed buys government securities to inject money into banks.", a:"Expansionary"},
+  {q:"Inflation is accelerating. The Fed sells securities to pull money out of the banking system.", a:"Contractionary"},
+  {q:"Credit is tight and businesses can’t borrow. The Fed lowers the discount rate to encourage bank lending.", a:"Expansionary"},
+  {q:"Prices keep rising and demand is too strong. The Fed raises the discount rate to slow borrowing.", a:"Contractionary"},
+  {q:"Banks are holding back loans during a downturn. The Fed lowers the reserve requirement.", a:"Expansionary"},
+  {q:"The economy is overheating and lending is excessive. The Fed raises the reserve requirement.", a:"Contractionary"},
+  {q:"A slowdown spreads across multiple industries. The Fed buys bonds to increase the money supply.", a:"Expansionary"},
+  {q:"Inflation remains high despite growth. The Fed sells bonds to reduce money supply.", a:"Contractionary"},
+  {q:"Consumers stop buying big-ticket items. The Fed lowers the discount rate to reduce interest rates.", a:"Expansionary"},
+  {q:"Rapid price increases threaten stability. The Fed raises the discount rate to increase interest rates.", a:"Contractionary"},
+  {q:"During a recession, the Fed wants banks making more loans. It reduces reserve requirements.", a:"Expansionary"},
+  {q:"During high inflation, the Fed wants fewer loans. It increases reserve requirements.", a:"Contractionary"},
+  {q:"The Fed wants to stimulate investment quickly. It buys securities on the open market.", a:"Expansionary"},
+  {q:"The Fed wants to slow spending quickly. It sells securities on the open market.", a:"Contractionary"},
+  {q:"Unemployment rises and GDP shrinks. The Fed takes action resulting in lower interest rates.", a:"Expansionary"},
+  {q:"Inflation rises and the Fed takes action resulting in higher interest rates.", a:"Contractionary"},
+  /* a few shorter “OST-style” but mixed in */
+  {q:"Recession deepens. The Fed buys bonds.", a:"Expansionary"},
+  {q:"Inflation spike. The Fed sells bonds.", a:"Contractionary"},
+  {q:"Banks need liquidity. Discount rate lowered.", a:"Expansionary"},
+  {q:"Prices surging. Discount rate raised.", a:"Contractionary"},
+  {q:"Lending slows. Reserve requirement lowered.", a:"Expansionary"},
+  {q:"Money supply too large. Reserve requirement raised.", a:"Contractionary"},
+  {q:"Economic slowdown. Fed buys securities.", a:"Expansionary"},
+  {q:"Economy overheating. Fed sells securities.", a:"Contractionary"},
+  {q:"Businesses struggling to borrow. Fed lowers discount rate.", a:"Expansionary"},
+];
+
+/* ---------- Game State ---------- */
+let scenarios = [];
+let index=0, correct=0, attempts=0, timer=0, interval;
+let toolUsed=false;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  if(!studentName.value.trim()) return alert("Enter full name.");
+  scenarios = shuffle(SCENARIOS_MASTER); // <-- prevents visible patterns
+  startScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
+  timestamp.textContent=new Date().toLocaleString();
+  loadScenario();
+  interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
+}
+
+function loadScenario(){
+  scenario.textContent=scenarios[index].q;
+  feedback.textContent="";
+  omo.value=0; reserve.value=0; discount.value=0;
+  toolUsed=false;
+  expandBtn.disabled=true;
+  contractBtn.disabled=true;
+  updateEconomy();
+}
+
+document.querySelectorAll("input[type=range]").forEach(s=>{
+  s.addEventListener("input", ()=>{
+    toolUsed=true;
+    expandBtn.disabled=false;
+    contractBtn.disabled=false;
+    updateEconomy();
+  });
+});
+
+function updateEconomy(){
+  // Positive net = more expansionary manipulation (visual only)
+  let net = parseInt(omo.value)+parseInt(reserve.value)+parseInt(discount.value);
+  let size = 160 + net/3;
+  size = Math.max(95, Math.min(255, size)); // clamp
+  econBox.style.width=size+"px";
+  econBox.style.height=size+"px";
+}
+
+function submitAnswer(choice){
+  if(!toolUsed) return;
+
+  attempts++; // misses stick; accuracy won’t “recover”
+  if(choice===scenarios[index].a){
+    correct++;
+    index++;
+    if(index>=scenarios.length){
+      if(correct===attempts) finishGame();
+      else alert("Ticket requires a perfect run: 100% accuracy.");
+      return;
+    }
+    loadScenario();
+  }else{
+    feedback.textContent="Hint: Buy securities / lower reserve / lower discount = Expansion. Sell / raise reserve / raise discount = Contract.";
+  }
+
+  accuracy.textContent=Math.round((correct/attempts)*100);
+}
+
+function finishGame(){
+  clearInterval(interval);
+  gameScreen.classList.add("hidden");
+  finishScreen.classList.remove("hidden");
+  finishScreen.innerHTML="<h2>100% Perfect Run!</h2>"+
+    "<p>Name: <b>"+escapeHtml(studentName.value.trim())+"</b></p>"+
+    "<p>Time: "+timer+" seconds</p>"+
+    "<p>Ticket: <b>MON-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</b></p>";
+}
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+</script>
+</body>
+</html><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Fiscal Policy Slider Simulation — CS20</title>
 
 <style>
