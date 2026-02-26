@@ -71,15 +71,15 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
     </div>
 
     <div>
-      <label><b>Lower Reserve ↑</b></label><br>
+      <label><b>Raise Reserve ↑</b></label><br>
       <input type="range" min="-100" max="100" value="0" id="reserve"><br>
-      <label>Raise Reserve ↓</label>
+      <label>Lower Reserve ↓</label>
     </div>
 
     <div>
-      <label><b>Lower Discount ↑</b></label><br>
+      <label><b>Raise Discount ↑</b></label><br>
       <input type="range" min="-100" max="100" value="0" id="discount"><br>
-      <label>Raise Discount ↓</label>
+      <label>Lower Discount ↓</label>
     </div>
   </div>
 
@@ -96,7 +96,6 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
 <div id="finishScreen" class="panel hidden"></div>
 
 <script>
-/* ---------- Scenario Bank (25) — Mixed order + more context ---------- */
 const SCENARIOS_MASTER = [
   {q:"A recession begins and unemployment rises. The Fed buys government securities to inject money into banks.", a:"Expansionary"},
   {q:"Inflation is accelerating. The Fed sells securities to pull money out of the banking system.", a:"Contractionary"},
@@ -114,7 +113,6 @@ const SCENARIOS_MASTER = [
   {q:"The Fed wants to slow spending quickly. It sells securities on the open market.", a:"Contractionary"},
   {q:"Unemployment rises and GDP shrinks. The Fed takes action resulting in lower interest rates.", a:"Expansionary"},
   {q:"Inflation rises and the Fed takes action resulting in higher interest rates.", a:"Contractionary"},
-  /* a few shorter “OST-style” but mixed in */
   {q:"Recession deepens. The Fed buys bonds.", a:"Expansionary"},
   {q:"Inflation spike. The Fed sells bonds.", a:"Contractionary"},
   {q:"Banks need liquidity. Discount rate lowered.", a:"Expansionary"},
@@ -126,7 +124,6 @@ const SCENARIOS_MASTER = [
   {q:"Businesses struggling to borrow. Fed lowers discount rate.", a:"Expansionary"},
 ];
 
-/* ---------- Game State ---------- */
 let scenarios = [];
 let index=0, correct=0, attempts=0, timer=0, interval;
 let toolUsed=false;
@@ -142,7 +139,7 @@ function shuffle(arr){
 
 function startGame(){
   if(!studentName.value.trim()) return alert("Enter full name.");
-  scenarios = shuffle(SCENARIOS_MASTER); // <-- prevents visible patterns
+  scenarios = shuffle(SCENARIOS_MASTER);
   startScreen.classList.add("hidden");
   gameScreen.classList.remove("hidden");
   timestamp.textContent=new Date().toLocaleString();
@@ -170,10 +167,18 @@ document.querySelectorAll("input[type=range]").forEach(s=>{
 });
 
 function updateEconomy(){
-  // Positive net = more expansionary manipulation (visual only)
-  let net = parseInt(omo.value)+parseInt(reserve.value)+parseInt(discount.value);
+  // OMO: up = Buy (expand), down = Sell (contract) -> use as-is
+  // Reserve/Discount labels are flipped to "Raise ↑ / Lower ↓"
+  // We must invert their contribution so:
+  // Raise (up) contracts, Lower (down) expands.
+  const omoVal = parseInt(omo.value);
+  const reserveVal = parseInt(reserve.value);
+  const discountVal = parseInt(discount.value);
+
+  let net = omoVal - reserveVal - discountVal;
+
   let size = 160 + net/3;
-  size = Math.max(95, Math.min(255, size)); // clamp
+  size = Math.max(95, Math.min(255, size));
   econBox.style.width=size+"px";
   econBox.style.height=size+"px";
 }
@@ -181,7 +186,7 @@ function updateEconomy(){
 function submitAnswer(choice){
   if(!toolUsed) return;
 
-  attempts++; // misses stick; accuracy won’t “recover”
+  attempts++;
   if(choice===scenarios[index].a){
     correct++;
     index++;
