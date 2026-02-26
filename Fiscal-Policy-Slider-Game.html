@@ -51,7 +51,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
   <input id="studentName" placeholder="First and Last Name"/>
   <br><br>
   <button class="primary" onclick="startGame()">Start</button>
-  <p class="small">CS20: Government uses taxing/spending (and regulation) to maintain stability & growth.</p>
+  <p class="small">CS20: Government uses taxing/spending to maintain economic stability.</p>
 </div>
 
 <div id="gameScreen" class="hidden">
@@ -65,8 +65,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
     <h2 id="scenario"></h2>
 
     <div class="instructions">
-      <b>Directions:</b> First, manipulate at least one tool (Spending or Taxes) to show the policy choice.<br>
-      Then select <b>Expansionary</b> or <b>Contractionary</b> correctly to advance.
+      Manipulate at least one tool, then choose Expansionary or Contractionary correctly.
     </div>
 
     <div class="slider-wrap">
@@ -77,9 +76,9 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
       </div>
 
       <div class="slider-block">
-        <label><b>Decrease Taxes ↑</b></label>
+        <label><b>Increase Taxes ↑</b></label>
         <input type="range" min="-100" max="100" value="0" id="taxes">
-        <label>Increase Taxes ↓</label>
+        <label>Decrease Taxes ↓</label>
       </div>
     </div>
 
@@ -100,41 +99,23 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
 
 <script>
 const SCENARIOS_MASTER = [
-  {q:"A recession hits. Congress launches a nationwide highway building program to create jobs and increase demand.", a:"Expansionary"},
-  {q:"The President promises to increase the child tax deduction to put more money back into households.", a:"Expansionary"},
-  {q:"During COVID-era long unemployment, Congress repeatedly extends unemployment benefits to support consumer spending.", a:"Expansionary"},
-  {q:"Consumer spending slows and layoffs rise. Congress approves stimulus checks funded by higher federal outlays.", a:"Expansionary"},
-  {q:"Businesses delay hiring. Congress creates new tax credits for companies that expand payroll.", a:"Expansionary"},
-  {q:"A major natural disaster damages infrastructure. Federal spending rises for rebuilding and emergency aid.", a:"Expansionary"},
-  {q:"The economy shows weak growth. Congress reduces payroll taxes to increase take-home pay.", a:"Expansionary"},
-  {q:"A downturn spreads. Congress increases funding for job training and public works programs.", a:"Expansionary"},
-  {q:"Housing construction collapses. Congress offers temporary tax deductions for home purchases or renovations.", a:"Expansionary"},
-  {q:"Industrial output falls. Congress increases government orders and purchases to keep factories running.", a:"Expansionary"},
-  {q:"Growth is too rapid and policymakers worry about overheating. Congress raises income tax rates.", a:"Contractionary"},
-  {q:"Prices are rising too quickly. Congress cuts discretionary federal spending to reduce demand pressure.", a:"Contractionary"},
-  {q:"A budget deficit grows quickly. Congress reduces funding for non-essential programs to slow spending growth.", a:"Contractionary"},
-  {q:"Strong demand is pushing prices upward. Congress increases corporate taxes to slow expansion.", a:"Contractionary"},
-  {q:"The economy is expanding too fast. Congress removes certain tax deductions, increasing overall tax burden.", a:"Contractionary"},
-  {q:"Inflation concerns rise. Congress delays or cancels a major spending package.", a:"Contractionary"},
-  {q:"The economy is overheating. Congress increases excise taxes on goods to reduce consumption.", a:"Contractionary"},
-  {q:"Rapid expansion is creating shortages. Congress reduces federal grants and spending to cool growth.", a:"Contractionary"},
-  {q:"Policymakers seek to slow growth. Congress increases payroll taxes to reduce disposable income.", a:"Contractionary"},
-  {q:"A boom leads to asset bubbles. Congress raises capital gains taxes to dampen speculative demand.", a:"Contractionary"},
-  {q:"Unemployment rises sharply. Congress increases unemployment benefits.", a:"Expansionary"},
-  {q:"GDP declines for two quarters. Federal spending increases.", a:"Expansionary"},
-  {q:"Prices rise too fast. Government spending decreases.", a:"Contractionary"},
-  {q:"Economic growth exceeds sustainable levels. Federal taxes increase.", a:"Contractionary"},
-  {q:"GDP falling. Spending increases.", a:"Expansionary"},
+  {q:"A recession hits. Congress launches a highway building program.", a:"Expansionary"},
+  {q:"Inflation rises. Congress increases income tax rates.", a:"Contractionary"},
+  {q:"Unemployment spikes. Congress extends unemployment benefits.", a:"Expansionary"},
+  {q:"Growth overheats. Congress cuts spending.", a:"Contractionary"},
+  {q:"GDP declines. Congress increases federal spending.", a:"Expansionary"},
+  {q:"Prices rising too quickly. Congress raises payroll taxes.", a:"Contractionary"},
+  {q:"Consumer demand weakens. Congress reduces taxes.", a:"Expansionary"},
+  {q:"Rapid expansion creates shortages. Congress reduces spending.", a:"Contractionary"},
 ];
 
-let scenarios = [];
-let index=0, correct=0, attempts=0, timer=0, interval;
+let scenarios=[], index=0, correct=0, attempts=0, timer=0, interval;
 let toolUsed=false;
 
 function shuffle(arr){
-  const a = arr.slice();
+  const a=arr.slice();
   for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
+    const j=Math.floor(Math.random()*(i+1));
     [a[i],a[j]]=[a[j],a[i]];
   }
   return a;
@@ -142,18 +123,19 @@ function shuffle(arr){
 
 function startGame(){
   if(!studentName.value.trim()) return alert("Enter full name.");
-  scenarios = shuffle(SCENARIOS_MASTER);
+  scenarios=shuffle(SCENARIOS_MASTER);
   startScreen.classList.add("hidden");
   gameScreen.classList.remove("hidden");
-  timestamp.textContent = new Date().toLocaleString();
+  timestamp.textContent=new Date().toLocaleString();
   loadScenario();
   interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
 }
 
 function loadScenario(){
-  document.getElementById("scenario").textContent = scenarios[index].q;
-  document.getElementById("feedback").textContent="";
-  spending.value=0; taxes.value=0;
+  scenario.textContent=scenarios[index].q;
+  feedback.textContent="";
+  spending.value=0;
+  taxes.value=0;
   toolUsed=false;
   expandBtn.disabled=true;
   contractBtn.disabled=true;
@@ -170,10 +152,9 @@ document.querySelectorAll("input[type=range]").forEach(s=>{
 });
 
 function updateEconomy(){
-  // IMPORTANT:
-  // Spending slider: up = more spending (expansion)
-  // Taxes slider: up = LOWER taxes (expansion)  ✅ therefore ADD it
-  let net = parseInt(spending.value) + parseInt(taxes.value);
+  // Spending ↑ expands
+  // Taxes ↑ contracts
+  let net = parseInt(spending.value) - parseInt(taxes.value);
 
   let size = 150 + net/2;
   size = Math.max(90, Math.min(240, size));
@@ -183,38 +164,32 @@ function updateEconomy(){
 
 function submitAnswer(choice){
   if(!toolUsed) return;
-
   attempts++;
-  if(choice === scenarios[index].a){
+
+  if(choice===scenarios[index].a){
     correct++;
     index++;
-    if(index >= scenarios.length){
-      if(correct === attempts) finishGame();
-      else alert("Ticket requires a perfect run: 100% accuracy.");
+    if(index>=scenarios.length){
+      if(correct===attempts) finishGame();
+      else alert("Ticket requires 100% accuracy.");
       return;
     }
     loadScenario();
-  }else{
-    document.getElementById("feedback").textContent =
-      "Hint: Expansionary = ↑spending OR ↓taxes. Contractionary = ↓spending OR ↑taxes.";
+  } else {
+    feedback.textContent="Hint: Expansionary = ↑spending OR ↓taxes. Contractionary = ↓spending OR ↑taxes.";
   }
 
-  document.getElementById("accuracy").textContent = Math.round((correct/attempts)*100);
+  accuracy.textContent=Math.round((correct/attempts)*100);
 }
 
 function finishGame(){
   clearInterval(interval);
   gameScreen.classList.add("hidden");
   finishScreen.classList.remove("hidden");
-  finishScreen.innerHTML =
-    "<h2>100% Perfect Run!</h2>" +
-    "<p>Name: <b>"+escapeHtml(studentName.value.trim())+"</b></p>" +
-    "<p>Time: "+timer+" seconds</p>" +
-    "<p>Ticket: <b>FISCAL-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</b></p>";
-}
-
-function escapeHtml(str){
-  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  finishScreen.innerHTML=
+    "<h2>100% Perfect Run!</h2>"+
+    "<p>Time: "+timer+" seconds</p>"+
+    "<p>Ticket: FISCAL-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</p>";
 }
 </script>
 </body>
