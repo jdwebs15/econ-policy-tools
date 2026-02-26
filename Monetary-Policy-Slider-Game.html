@@ -14,28 +14,52 @@
   --good:#2bd576;
   --bad:#ff5c7a;
   --accent:#7aa2ff;
+  --line:rgba(255,255,255,.12);
+  --shadow:0 18px 55px rgba(0,0,0,.35);
 }
+*{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui;text-align:center;}
-.panel{background:var(--panel);margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);}
-input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:8px;height:250px;}
+.panel{background:var(--panel);margin:20px auto;padding:20px;border-radius:18px;width:min(1100px,95vw);border:1px solid var(--line);box-shadow:var(--shadow);}
+input{padding:8px;border-radius:10px;border:1px solid var(--line);background:#0f1830;color:var(--text);font-size:16px;outline:none;}
+input[type=range]{writing-mode:bt-lr;-webkit-appearance:slider-vertical;width:10px;height:260px;}
 .slider-wrap{display:flex;justify-content:center;gap:60px;margin:26px 0 18px;}
 .economy{
   margin:14px auto 6px;
   width:160px;height:160px;
   background:var(--accent);
   display:flex;align-items:center;justify-content:center;
-  border-radius:12px;transition:.25s;
+  border-radius:14px;transition:.22s;
   font-weight:900; letter-spacing:.05em;
 }
-button{padding:10px 16px;border:none;border-radius:10px;margin:5px;cursor:pointer;font-weight:bold;}
+button{padding:10px 16px;border:none;border-radius:12px;margin:6px;cursor:pointer;font-weight:800}
 button:disabled{opacity:.4;cursor:not-allowed;}
-.good{background:var(--good);}
-.bad{background:var(--bad);}
+.good{background:var(--good);} /* Expansionary */
+.bad{background:var(--bad);}   /* Contractionary */
 .hidden{display:none;}
 .instructions{font-size:14px;color:var(--muted);margin:0 0 14px;line-height:1.35;}
 .meta{font-size:14px;color:var(--muted);margin-bottom:10px;}
 .small{font-size:13px;color:var(--muted);}
-hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
+hr{border:none;border-top:1px solid var(--line);margin:14px 0;}
+.ticketBox{
+  width:min(900px,92vw);
+  margin:14px auto 0;
+  text-align:left;
+}
+.ticketActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+textarea{
+  width:100%;
+  min-height:170px;
+  resize:vertical;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#0f1830;
+  color:var(--text);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  font-size:13px;
+  line-height:1.35;
+}
+.notice{color:var(--muted);font-size:13px;margin-top:8px;}
 </style>
 </head>
 <body>
@@ -43,10 +67,10 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
 <div id="startScreen" class="panel">
   <h1>Monetary Policy Simulation</h1>
   <p>Enter Full Name to Begin</p>
-  <input id="studentName" placeholder="First and Last Name"/>
+  <input id="studentName" placeholder="First and Last Name" autocomplete="name"/>
   <br><br>
   <button onclick="startGame()">Start</button>
-  <p class="small">CS21: The Fed regulates money supply using OMO, reserve requirement, and discount rate.</p>
+  <p class="small">CS21: The Fed uses OMO, reserve requirement, and discount rate to regulate money supply.</p>
 </div>
 
 <div id="gameScreen" class="panel hidden">
@@ -60,7 +84,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
 
   <div class="instructions">
     <b>Directions:</b> Manipulate at least one monetary tool, then choose the correct policy.<br>
-    Expansionary tools increase money supply / lower rates. Contractionary tools reduce money supply / raise rates.
+    Expansionary: buy securities / lower reserve / lower discount. Contractionary: sell / raise / raise.
   </div>
 
   <div class="slider-wrap">
@@ -83,7 +107,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
     </div>
   </div>
 
-  <div class="economy" id="econBox">ECONY / INFL</div>
+  <div class="economy" id="econBox">ECON / INFL</div>
 
   <hr>
 
@@ -93,7 +117,17 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;}
   <p id="feedback"></p>
 </div>
 
-<div id="finishScreen" class="panel hidden"></div>
+<div id="finishScreen" class="panel hidden">
+  <h2 id="finishTitle">Result</h2>
+  <div class="ticketBox">
+    <textarea id="ticketText" readonly></textarea>
+    <div class="ticketActions">
+      <button class="primary" onclick="copyTicket()" style="background:var(--accent);color:#000;">Copy Ticket</button>
+      <button onclick="restart()">Restart</button>
+    </div>
+    <div class="notice">Tip: Students can paste this ticket into your Google Form submission.</div>
+  </div>
+</div>
 
 <script>
 const SCENARIOS_MASTER = [
@@ -128,6 +162,10 @@ let scenarios = [];
 let index=0, correct=0, attempts=0, timer=0, interval;
 let toolUsed=false;
 
+let startStamp=null;
+let endStamp=null;
+let ticketId="";
+
 function shuffle(arr){
   const a = arr.slice();
   for(let i=a.length-1;i>0;i--){
@@ -138,12 +176,27 @@ function shuffle(arr){
 }
 
 function startGame(){
-  if(!studentName.value.trim()) return alert("Enter full name.");
+  const name = studentName.value.trim();
+  if(!name) return alert("Enter full name.");
+
   scenarios = shuffle(SCENARIOS_MASTER);
+  index=0; correct=0; attempts=0; timer=0;
+  toolUsed=false;
+
+  startStamp = new Date();
+  ticketId = "MON-" + Math.random().toString(36).substring(2,8).toUpperCase();
+
   startScreen.classList.add("hidden");
+  finishScreen.classList.add("hidden");
   gameScreen.classList.remove("hidden");
-  timestamp.textContent=new Date().toLocaleString();
+
+  timestamp.textContent = "Started: " + startStamp.toLocaleString();
+  accuracy.textContent = "100";
+  document.getElementById("timer").textContent = "0";
+
   loadScenario();
+
+  clearInterval(interval);
   interval=setInterval(()=>{timer++;document.getElementById("timer").textContent=timer;},1000);
 }
 
@@ -167,15 +220,14 @@ document.querySelectorAll("input[type=range]").forEach(s=>{
 });
 
 function updateEconomy(){
-  // OMO: up = Buy (expand), down = Sell (contract) -> use as-is
-  // Reserve/Discount labels are flipped to "Raise ↑ / Lower ↓"
-  // We must invert their contribution so:
-  // Raise (up) contracts, Lower (down) expands.
+  // OMO: up=Buy expands, down=Sell contracts -> use as-is
+  // Reserve/Discount labels are Raise ↑ / Lower ↓, but we want:
+  // Raise contracts, Lower expands -> invert their contribution.
   const omoVal = parseInt(omo.value);
   const reserveVal = parseInt(reserve.value);
   const discountVal = parseInt(discount.value);
 
-  let net = omoVal - reserveVal - discountVal;
+  const net = omoVal - reserveVal - discountVal;
 
   let size = 160 + net/3;
   size = Math.max(95, Math.min(255, size));
@@ -190,31 +242,76 @@ function submitAnswer(choice){
   if(choice===scenarios[index].a){
     correct++;
     index++;
+
+    updateAccuracy();
+
     if(index>=scenarios.length){
-      if(correct===attempts) finishGame();
-      else alert("Ticket requires a perfect run: 100% accuracy.");
+      endRun();
       return;
     }
     loadScenario();
   }else{
+    updateAccuracy();
     feedback.textContent="Hint: Buy securities / lower reserve / lower discount = Expansion. Sell / raise reserve / raise discount = Contract.";
   }
-
-  accuracy.textContent=Math.round((correct/attempts)*100);
 }
 
-function finishGame(){
+function updateAccuracy(){
+  const pct = Math.round((correct/attempts)*100);
+  accuracy.textContent = isFinite(pct) ? pct : 100;
+}
+
+function endRun(){
   clearInterval(interval);
+  endStamp = new Date();
+
+  const passed = (correct === attempts) && (attempts === scenarios.length);
+  const finalAccuracy = Math.round((correct/attempts)*100);
+
   gameScreen.classList.add("hidden");
   finishScreen.classList.remove("hidden");
-  finishScreen.innerHTML="<h2>100% Perfect Run!</h2>"+
-    "<p>Name: <b>"+escapeHtml(studentName.value.trim())+"</b></p>"+
-    "<p>Time: "+timer+" seconds</p>"+
-    "<p>Ticket: <b>MON-"+Math.random().toString(36).substring(2,8).toUpperCase()+"</b></p>";
+  finishTitle.textContent = passed ? "100% Perfect Run!" : "Run Complete (Not Passed)";
+
+  const ticket =
+`LEGEND MASTERy — CS21 Monetary Policy
+-------------------------------------
+Name: ${studentName.value.trim()}
+Ticket ID: ${ticketId}
+
+Start:  ${startStamp.toLocaleString()}
+Finish: ${endStamp.toLocaleString()}
+Elapsed: ${timer} seconds
+
+Passed: ${passed ? "YES" : "NO"}
+Accuracy: ${finalAccuracy}%
+Correct/Attempts: ${correct}/${attempts}
+Scenarios: ${scenarios.length}
+
+(Submit this ticket to your teacher.)`;
+
+  ticketText.value = ticket;
+
+  if(!passed){
+    alert("This run is NOT a pass. Ticket requires 100% accuracy (perfect run).");
+  }
 }
 
-function escapeHtml(str){
-  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+async function copyTicket(){
+  try{
+    await navigator.clipboard.writeText(ticketText.value);
+  }catch(e){
+    ticketText.focus();
+    ticketText.select();
+    document.execCommand("copy");
+  }
+  alert("Ticket copied!");
+}
+
+function restart(){
+  clearInterval(interval);
+  finishScreen.classList.add("hidden");
+  gameScreen.classList.add("hidden");
+  startScreen.classList.remove("hidden");
 }
 </script>
 </body>
